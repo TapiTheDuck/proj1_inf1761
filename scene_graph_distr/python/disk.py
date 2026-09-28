@@ -32,12 +32,11 @@ class Disk(Shape):
 
             # Vértice 1: borda no ângulo atual
             p1 = [radius * np.cos(theta), radius * np.sin(theta)]
-            uv1 = [0.5 + 0.5 * np.cos(theta), 0.5 + 0.5 * np.sin(theta)]
+            uv1 = [0.5 + 0.5 * np.cos(theta), 0.5 - 0.5 * np.sin(theta)]   # <- sinal trocado no V
 
             # Vértice 2: borda no próximo ângulo
             p2 = [radius * np.cos(theta_next), radius * np.sin(theta_next)]
-            uv2 = [0.5 + 0.5 * np.cos(theta_next), 0.5 + 0.5 * np.sin(theta_next)]
-
+            uv2 = [0.5 + 0.5 * np.cos(theta_next), 0.5 - 0.5 * np.sin(theta_next)]   # <- idem
             positions.extend([p0, p1, p2])
             texcoords.extend([uv0, uv1, uv2])
 

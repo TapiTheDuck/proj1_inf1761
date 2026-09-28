@@ -36,26 +36,24 @@ class SolarEngine(Engine):
   def __init__(
       self,
       mercury_orbit_trf: Transform,
+      mercury_spin_trf: Transform,
       earth_orbit_trf: Transform,
       earth_spin_trf: Transform,
       moon_orbit_trf: Transform,
+
   ) -> None:
     self.mercury_orbit_trf = mercury_orbit_trf
     self.earth_orbit_trf = earth_orbit_trf
     self.earth_spin_trf = earth_spin_trf
     self.moon_orbit_trf = moon_orbit_trf
+    self.mercury_spin_trf = mercury_spin_trf
 
   def update(self, dt: float) -> None:
-    # Mercúrio orbita o Sol mais rápido
     self.mercury_orbit_trf.rotate(45.0 * dt, 0, 0, 1)
+    self.mercury_spin_trf.rotate(100.0 * dt, 0, 0, 1) 
 
-    # Translação da Terra em torno do Sol
     self.earth_orbit_trf.rotate(20.0 * dt, 0, 0, 1)
-
-    # Rotação da Terra em torno do seu próprio eixo
     self.earth_spin_trf.rotate(140.0 * dt, 0, 0, 1)
-
-    # Translação da Lua em torno da Terra
     self.moon_orbit_trf.rotate(90.0 * dt, 0, 0, 1)
 
 
@@ -103,11 +101,14 @@ def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
   trf_mercury_trans = Transform()
   trf_mercury_trans.translate(1.8, 0.0, 0.0)
 
+  trf_mercury_spin = Transform()
+
   trf_mercury_geom = Transform()
   trf_mercury_geom.scale(0.18, 0.18, 1.0)
   node_mercury_geom = Node(trf=trf_mercury_geom, apps=[ts_mercury], shps=[disk_shape])
+  node_mercury_spin = Node(trf=trf_mercury_spin, nodes=[node_mercury_geom])
 
-  node_mercury_trans = Node(trf=trf_mercury_trans, nodes=[node_mercury_geom])
+  node_mercury_trans = Node(trf=trf_mercury_trans, nodes=[node_mercury_spin]) 
   node_mercury_orbit = Node(trf=trf_mercury_orbit, nodes=[node_mercury_trans])
 
   # 5. Terra
@@ -153,7 +154,12 @@ def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
       "attributes": [{"format": "float32x2", "offset": 0, "var_name": "uv"}],
     },
   ])
-  pipeline = Pipeline(shader, target_format, depth_stencil=None)
+  blend = {
+    "color": {"src_factor": "src-alpha", "dst_factor": "one-minus-src-alpha", "operation": "add"},
+    "alpha": {"src_factor": "one", "dst_factor": "one-minus-src-alpha", "operation": "add"},
+  }
+
+  pipeline = Pipeline(shader, target_format, depth_stencil=None, blend=blend)
 
   # Registra os TextureSets
   shader.add_texture_set(ts_space)
@@ -167,7 +173,10 @@ def initialize(device: wgpu.GPUDevice, target_format: str) -> None:
 
   global scene
   scene = Scene(root)
-  scene.add_engine(SolarEngine(trf_mercury_orbit, trf_earth_orbit, trf_earth_spin, trf_moon_orbit))
+  scene.add_engine(SolarEngine(
+    trf_mercury_orbit, trf_mercury_spin,
+    trf_earth_orbit, trf_earth_spin, trf_moon_orbit,
+))
 
 
 def update(dt: float) -> None:
